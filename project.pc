@@ -1,0 +1,445 @@
+
+
+#include <stdio.h>
+#include <string.h>
+#include <sqlca.h>
+#include <stdlib.h>
+#include <sqlda.h>
+#include <sqlcpr.h>
+
+#define UNAME_LEN      20 
+#define PWD_LEN        25 
+ 
+/*
+ * Use the precompiler typedef'ing capability to create
+ * null-terminated strings for the authentication host
+ * variables. (This isn't really necessary--plain char *'s
+ * would work as well. This is just for illustration.)
+ */
+typedef char String[PWD_LEN]; 
+
+EXEC SQL TYPE String IS CHARZ(PWD_LEN) REFERENCE; 
+String     username; 
+String     password; 
+
+/*query 1 */
+struct Event 
+{ 
+    String date;
+    String type;
+    String comments; 
+}; 
+
+/*query 2 */
+struct EventInterval {
+    String edate;
+    String name;
+    String etype;
+    String ecomments;
+};
+
+/*query 3 */
+struct ContactInfo {
+    String name;
+    String salutation;
+    String job;
+    String comments;
+    String tAddress;
+    String Address;
+    String tPhone;
+    String Phone;
+};
+
+/* query 4 */
+struct Call {
+    String type;
+};
+
+/*query 5*/
+struct Subordinates {
+    String name;
+    String job;
+    String officePhone;
+    String email;
+};
+
+/*query 6 */
+struct Managers {
+    String name;
+};
+
+/*query 7*/
+struct Company {
+    String company; 
+};
+
+/*query 8*/
+struct Interaction {
+    String name;
+};
+
+/*query 9 - struct not needed*/
+
+/*query 10*/
+struct City {
+    String name;
+};
+
+void sql_error(msg) 
+    char *msg;
+{ 
+    char err_msg[512];
+    size_t buf_len, msg_len;
+
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+    printf("\n%s\n", msg);
+
+/* Call sqlglm() to get the complete text of the
+ * error message.
+ */
+    buf_len = sizeof (err_msg);
+    sqlglm(err_msg, &buf_len, &msg_len);
+    printf("%.*s\n", msg_len, err_msg);
+
+    EXEC SQL ROLLBACK RELEASE;
+    exit(EXIT_FAILURE);
+} 
+
+int main() 
+{ 
+
+int count;
+    struct Event *Event_ptr; 
+
+/* Allocate memory for Event struct. */ 
+    if ((Event_ptr = 
+        (struct Event *) malloc(sizeof(struct Event))) == 0)
+    { 
+        fprintf(stderr, "Memory allocation error.\n"); 
+        exit(EXIT_FAILURE); 
+    } 
+
+    struct EventInterval *EventInterval_ptr;
+
+/*allocate memory for EventInterval struct */
+
+     if ((EventInterval_ptr = 
+        (struct EventInterval *) malloc(sizeof(struct EventInterval))) == 0)
+    { 
+        fprintf(stderr, "Memory allocation error.\n"); 
+        exit(EXIT_FAILURE); 
+    } 
+
+
+        struct ContactInfo *ContactInfo_ptr;
+
+/*allocate memory for ContactInfo struct */
+
+     if ((ContactInfo_ptr = 
+        (struct ContactInfo *) malloc(sizeof(struct ContactInfo))) == 0)
+    { 
+        fprintf(stderr, "Memory allocation error.\n"); 
+        exit(EXIT_FAILURE); 
+    }
+
+
+    struct Call *Call_ptr;
+
+/*allocate memory for ContactInfo struct */
+
+     if ((Call_ptr = 
+        (struct Call *) malloc(sizeof(struct Call))) == 0)
+    { 
+        fprintf(stderr, "Memory allocation error.\n"); 
+        exit(EXIT_FAILURE); 
+    }  
+
+    struct Subordinates *Subordinates_ptr;
+
+    /*allocate memory for Subordinates struct */
+
+     if ((Subordinates_ptr = 
+        (struct Subordinates *) malloc(sizeof(struct Subordinates))) == 0)
+    { 
+        fprintf(stderr, "Memory allocation error.\n"); 
+        exit(EXIT_FAILURE); 
+    } 
+
+    struct Managers *Managers_ptr;
+
+/*allocate memory for Guest struct */
+
+     if ((Managers_ptr = 
+        (struct Managers *) malloc(sizeof(struct Managers))) == 0)
+    { 
+        fprintf(stderr, "Memory allocation error.\n"); 
+        exit(EXIT_FAILURE); 
+    } 
+
+
+    struct Company *Company_ptr;
+
+    /*allocate memory for Guest struct */
+
+     if ((Company_ptr = 
+        (struct Company *) malloc(sizeof(struct Company))) == 0)
+    { 
+        fprintf(stderr, "Memory allocation error.\n"); 
+        exit(EXIT_FAILURE); 
+    } 
+
+
+    struct Interaction *Interaction_ptr;
+
+/*allocate memory for Interaction struct; */
+    
+     if ((Interaction_ptr = 
+        (struct Interaction *) malloc(sizeof(struct Interaction))) == 0)
+    { 
+        fprintf(stderr, "Memory allocation error.\n"); 
+        exit(EXIT_FAILURE); 
+    } 
+
+
+
+    struct City *City_ptr;
+
+/*allocate memory for city struct; */
+    
+     if ((City_ptr = 
+        (struct City *) malloc(sizeof(struct City))) == 0)
+    { 
+        fprintf(stderr, "Memory allocation error.\n"); 
+        exit(EXIT_FAILURE); 
+    } 
+
+
+
+ 
+/* Connect to ORACLE. */ 
+    strcpy(username, "en567g3@oradb"); 
+    strcpy(password, "een567"); 
+ 
+    EXEC SQL WHENEVER SQLERROR DO sql_error("ORACLE error--");
+ 
+    EXEC SQL CONNECT :username IDENTIFIED BY :password; 
+    printf("\nConnected to ORACLE as user: %s\n", username); 
+
+int input;
+
+/*create main menu loop */
+
+    do {
+
+        printf("please enter 1-10 for a query, enter 0 to stop\n");
+        scanf("%d", &input);
+
+        switch(input) {
+            case 1: 
+                printf("Listing all interaction events associated with a particular contact\n");
+                EXEC SQL DECLARE interactionCursor CURSOR FOR
+                    SELECT eventDate, type, comments
+                        FROM Event
+                            WHERE clientName = 'Lebron James';
+
+                EXEC SQL OPEN interactionCursor;
+
+                printf("Interaction events associated with Lebron James...\n");
+
+                EXEC SQL WHENEVER NOT FOUND DO BREAK;
+                for(;;) {
+                    EXEC SQL FETCH interactionCursor INTO :Event_ptr;
+                    printf(" %s          %s          %s\n", Event_ptr->date, Event_ptr->type, Event_ptr->comments);
+                }
+                /*close cursor */
+                EXEC SQL CLOSE interactionCursor;
+                break;
+            case 2:
+                printf("Interaction events within a date interval...\n");
+                /*write code for query 2 */
+                EXEC SQL DECLARE intervalCursor CURSOR FOR
+                    SELECT *
+                        FROM Event
+                            WHERE eventDate BETWEEN '05-FEB-14' AND '05-MAR-14' ;
+                EXEC SQL OPEN intervalCursor;
+
+                printf("Interactions between 2/5/14 and 3/5/14......\n");
+
+                EXEC SQL WHENEVER NOT FOUND DO BREAK;
+                for(;;) {
+                    EXEC SQL FETCH intervalCursor INTO :EventInterval_ptr;
+                    printf(" %s    %s    %s     %s\n", EventInterval_ptr->edate, EventInterval_ptr->name, EventInterval_ptr->etype, EventInterval_ptr->ecomments);
+                }
+                EXEC SQL CLOSE intervalCursor;
+                break;
+            case 3: /*NEED TO UPDATE*/
+                printf("executing query 3\n");
+                /*write code for query 3 */
+                EXEC SQL DECLARE contactCursor CURSOR FOR
+                    SELECT Person.salutation, Person.name, Person.jobTitle, Person.comments, Address.addressType, Address.address, PhoneNumber.type, PhoneNumber.phoneNumber
+                        FROM Person, Address, PhoneNumber, Company
+                                WHERE Company.compID = 'Nike' AND Person.name = Address.ownerName AND Person.name = PhoneNumber.name AND Person.name = Company.empName;
+                EXEC SQL OPEN contactCursor;
+
+                printf("Contact info of Nike Employees....\n");
+
+                EXEC SQL WHENEVER NOT FOUND DO BREAK;
+                for(;;) {
+                    EXEC SQL FETCH contactCursor INTO :ContactInfo_ptr;
+                    printf("%s %s %s %s %s %s %s %s\n",ContactInfo_ptr->salutation, ContactInfo_ptr->name, ContactInfo_ptr->job, ContactInfo_ptr->comments, ContactInfo_ptr->tAddress, ContactInfo_ptr->Address, ContactInfo_ptr->tPhone, ContactInfo_ptr->Phone);
+                }
+
+                EXEC SQL CLOSE contactCursor;
+                break;
+            case 4:
+                count = 0;
+                printf("executing query 4\n");
+                /*write code for query 4 */
+                EXEC SQL DECLARE callCursor CURSOR FOR
+                    SELECT type
+                        FROM Event
+                            WHERE type = 'phone' AND eventDate BETWEEN '01-JAN-12' AND '01-MAR-12';
+                EXEC SQL OPEN callCursor;
+
+                printf("phone calls between 1/1/12 and 3/1/12\n");
+
+                EXEC SQL WHENEVER NOT FOUND DO BREAK;
+                for(;;) {
+                    EXEC SQL FETCH callCursor INTO :Call_ptr;
+                    count++;
+                }
+
+                printf("%d phone calls were made\n", count);
+                EXEC SQL CLOSE callCursor;
+                break;
+            case 5: /*NEED TO UPDATE*/
+                printf("listing contact info for subordinates of John Smith\n");
+                EXEC SQL DECLARE subordinateCursor CURSOR FOR
+                    SELECT Person.name, Person.jobTitle, PhoneNumber.phoneNumber, Address.address
+                        FROM Person, Address, PhoneNumber
+                            WHERE Person.managerName = 'John Smith' AND Address.addressType = 'email' AND PhoneNumber.type = 'office' AND Person.name = PhoneNumber.name AND Person.name = Address.ownerName;
+                EXEC SQL OPEN subordinateCursor;
+                EXEC SQL WHENEVER NOT FOUND DO BREAK;
+                for(;;) {
+                    EXEC SQL FETCH subordinateCursor INTO :Subordinates_ptr;
+                    printf("%s   %s    %s    %s\n", Subordinates_ptr->name, Subordinates_ptr->job, Subordinates_ptr->officePhone, Subordinates_ptr->email);
+                }
+                EXEC SQL CLOSE subordinateCursor;
+                break;
+            case 6:
+                printf("listing all contacts with 3 or more Subordinates (assuming a secretary is a subordinate)\n");
+
+                EXEC SQL DECLARE managerCursor CURSOR FOR
+                    SELECT name
+                        FROM Person
+                            WHERE jobTitle = 'manager' AND subordinateCount >= 3;
+
+                EXEC SQL OPEN managerCursor;
+
+                EXEC SQL WHENEVER NOT FOUND DO BREAK;
+                for(;;) {
+                    EXEC SQL FETCH managerCursor INTO :Managers_ptr;
+                    printf("%s     \n", Managers_ptr->name);
+                }
+                /*close cursor */
+                EXEC SQL CLOSE managerCursor;
+                break;
+            case 7:
+                count = 0;
+                printf("counting number of contacts per company \n");
+                
+                EXEC SQL DECLARE companyCursor CURSOR FOR
+                    SELECT DISTINCT compID
+                        FROM Company;
+
+                EXEC SQL OPEN companyCursor;
+
+                EXEC SQL WHENEVER NOT FOUND DO BREAK;
+                for(;;) {
+                    EXEC SQL FETCH companyCursor INTO :Company_ptr;
+
+                    EXEC SQL SELECT COUNT(empName) INTO :count
+                    FROM Company
+                    WHERE CompID = 'Nike';
+
+                    printf("%s   has   %d contacts\n", Company_ptr->company, count);
+                }
+
+                EXEC SQL CLOSE companyCursor;
+                break;
+            case 8:
+                printf("listing all contacts with greater than 3 interaction events\n");
+
+                EXEC SQL DECLARE interactionCountCursor CURSOR FOR
+                    SELECT name 
+                        FROM Person
+                            WHERE contactCount > 3;
+
+                EXEC SQL OPEN interactionCountCursor;
+
+                EXEC SQL  WHENEVER NOT FOUND DO BREAK;
+                for(;;) {
+                    EXEC SQL FETCH interactionCountCursor INTO :Interaction_ptr;
+
+                    printf("%s \n", Interaction_ptr->name);
+                }
+
+                EXEC SQL CLOSE interactionCountCursor;
+                break;
+            case 9:
+                printf("listing total # of phone calls, emails, and postal mail events\n");
+
+                int phoneCount = 0;
+                int emailCount = 0;
+                int postalCount = 0;
+
+                EXEC SQL SELECT COUNT(*) INTO :phoneCount
+                    FROM Event
+                        WHERE type = 'phone';
+
+                EXEC SQL SELECT COUNT(*) INTO :emailCount
+                    FROM Event
+                        WHERE type = 'email';
+
+                EXEC SQL SELECT COUNT(*) INTO :postalCount
+                    FROM Event
+                        WHERE type = 'postal mail';
+
+                printf("number of phone call events : %d \n", phoneCount);
+
+                printf("number of email events : %d \n", emailCount);
+
+                printf("number of postal mail events : %d \n", postalCount);
+                break;
+            case 10:
+                printf("listing all contacts in the city of Miami\n");
+
+                EXEC SQL DECLARE cityCursor CURSOR FOR
+                    SELECT ownerName
+                        FROM Address
+                            WHERE address LIKE '%Miami%' AND addressType = 'home';
+
+                EXEC SQL OPEN cityCursor;
+
+                EXEC SQL  WHENEVER NOT FOUND DO BREAK;
+                for(;;) {
+                    EXEC SQL FETCH cityCursor INTO :City_ptr;
+                    printf("%s \n", City_ptr->name);
+                }
+                break;
+            case 0:
+                break;
+            default:
+                printf("oops, something went wrong");
+
+        }
+    } while (input != 0);
+
+
+    EXEC SQL COMMIT WORK RELEASE;
+    exit(EXIT_SUCCESS);
+
+
+
+}
